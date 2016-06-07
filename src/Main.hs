@@ -6,7 +6,10 @@ import qualified Data.ByteString.Char8  as BC
 import qualified Data.ByteString.Lazy   as L
 import qualified Codec.Compression.GZip as GZ
 
-testfile = "/home/mjansen/ASX/itch/nasdaq/01302016.NASDAQ_ITCH50.gz"
+import System.Environment
+
+testfile1 = "/home/mjansen/ASX/itch/nasdaq/01302016.NASDAQ_ITCH50.gz"
+testfile2 = "/home/mjansen/ASX/itch/nasdaq/05272016.NASDAQ_ITCH50.gz"
 
 data Message = Message
   { m_length  :: Int
@@ -30,6 +33,7 @@ decodeToList str =
 
 main :: IO ()
 main = do
+  [testfile] <- getArgs
   rs <- decodeToList . GZ.decompress <$> L.readFile testfile
   let feature = BC.head . m_content
   putStr . map feature $ rs
