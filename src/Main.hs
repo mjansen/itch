@@ -8,18 +8,20 @@ import qualified Codec.Compression.GZip as GZ
 
 import System.Environment
 
+import qualified Data.ITCH.NASDAQ.NASDAQ50.Messages as N50
+
 testfile1 = "/home/mjansen/ASX/itch/nasdaq/01302016.NASDAQ_ITCH50.gz"
 testfile2 = "/home/mjansen/ASX/itch/nasdaq/05272016.NASDAQ_ITCH50.gz"
 
 data Message = Message
   { m_length  :: Int
-  , m_content :: BC.ByteString
+  , m_content :: L.ByteString
   } deriving (Eq, Ord, Show)
 
 instance S.Binary Message where
   get = do
     len <- fromIntegral <$> S.getWord16be
-    str <- S.getByteString len
+    str <- S.getLazyByteString (fromIntegral len)
     return $ Message len str
   put = undefined
 
@@ -35,5 +37,14 @@ main :: IO ()
 main = do
   [testfile] <- getArgs
   rs <- decodeToList . GZ.decompress <$> L.readFile testfile
-  let feature = BC.head . m_content
-  putStr . map feature $ rs
+  mapM_ printMessage rs
+  -- let feature = BC.head . m_content
+  -- putStr . map feature $ rs
+
+printMessage :: Message -> IO ()
+printMessage msg@(Message len con) = do
+  print msg
+  case S.decode con :: N50.Message of
+    N50.MOther _ _ -> return ()
+    m              -> print m
+    
