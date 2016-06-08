@@ -43,7 +43,7 @@ main = do
 
 printMessage :: Message -> IO ()
 printMessage msg@(Message len con) = do
-  print msg
+  -- print msg
   case S.decode con :: N50.Message of
     N50.MOther _ _ -> return ()
     m              -> print m
