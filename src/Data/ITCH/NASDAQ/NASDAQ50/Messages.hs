@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Data.ITCH.NASDAQ.NASDAQ50.Messages where
 
 import Data.Word
@@ -6,6 +7,7 @@ import qualified Data.Binary.Get       as S
 import qualified Data.Binary.Put       as S
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Short as BS
+import qualified Data.ByteString.Lazy  as L
 
 type ShortByteString = BS.ShortByteString
 
@@ -27,10 +29,8 @@ data SystemEvent = SystemEvent
   } deriving (Eq, Ord, Show)
 
 instance S.Binary SystemEvent where
-  get = do
-    'S' <- S.get
-    SystemEvent <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.get
-  put (SystemEvent a b c d) = S.put 'S' >> S.put a >> S.put b >> S.put c >> S.put d
+  get = SystemEvent <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.get
+  put (SystemEvent a b c d) = S.put a >> S.put b >> S.put c >> S.put d
   
 data StockDirectory = StockDirectory
   { sdm_stockLocate                 :: Word16
@@ -52,6 +52,13 @@ data StockDirectory = StockDirectory
   , sdm_inverseIndicator            :: Char
   } deriving (Eq, Ord, Show)
 
+instance S.Binary StockDirectory where
+  get = StockDirectory <$> S.getWord16be <*> S.getWord16be <*> S.get <*> (BS.toShort <$> S.getByteString 8)
+                       <*> S.get <*> S.get <*> S.getWord32be <*> S.get <*> S.get
+                       <*> (BS.toShort <$> S.getByteString 2) <*> S.get <*> S.get <*> S.get <*> S.get
+                       <*> S.get <*> S.getWord32be <*> S.get
+  put = undefined
+
 data StockTradingAction = StockTradingAction
   { sta_stockLocate                 :: Word16
   , sta_tracking                    :: Word16
@@ -59,8 +66,13 @@ data StockTradingAction = StockTradingAction
   , sta_stock                       :: ShortByteString -- 8
   , sta_tradingState                :: Char
   , sta_reserved                    :: Char
-  , str_reason                      :: ShortByteString
+  , str_reason                      :: ShortByteString -- 4
   } deriving (Eq, Ord, Show)
+
+instance S.Binary StockTradingAction where
+  get = StockTradingAction <$> S.getWord16be <*> S.getWord16be <*> S.get <*> (BS.toShort <$> S.getByteString 8)
+                           <*> S.get <*> S.get <*> (BS.toShort <$> S.getByteString 4)
+  put = undefined
 
 data REGSHORestriction = REGSHORestriction
   { rsr_stockLocate                 :: Word16
@@ -70,6 +82,11 @@ data REGSHORestriction = REGSHORestriction
   , rsr_REGSHOAction                :: Char
   } deriving (Eq, Ord, Show)
   
+instance S.Binary REGSHORestriction where
+  get = REGSHORestriction <$> S.getWord16be <*> S.getWord16be <*> S.get
+                          <*> (BS.toShort <$> S.getByteString 8) <*> S.get
+  put = undefined
+
 data MarketParticipantPosition = MarketParticipantPosition
   { mpp_stockLocate                 :: Word16
   , mpp_tracking                    :: Word16
@@ -81,14 +98,42 @@ data MarketParticipantPosition = MarketParticipantPosition
   , mpp_marketPartcipant            :: Char
   } deriving (Eq, Ord, Show)
 
+instance S.Binary MarketParticipantPosition where
+  get = MarketParticipantPosition <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord32be
+                                  <*> (BS.toShort <$> S.getByteString 8) <*> S.get <*> S.get <*> S.get
+  put = undefined
+
+data Other = Other
+  { oth_content     :: ShortByteString
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary Other where
+  get = Other . BS.toShort . L.toStrict <$> S.getRemainingLazyByteString
+  put = undefined
+
 data Message = MSystemEvent SystemEvent
              | MStockDirectory StockDirectory
              | MStockTradingAction StockTradingAction
              | MREGSHORestriction REGSHORestriction
+             | MMarketParticipantPosition MarketParticipantPosition
+             | MOther Char Other
              deriving (Eq, Ord, Show)
 
+instance S.Binary Message where
+  get = do
+    (c :: Char) <- S.get
+    case c of
+      'S' -> MSystemEvent               <$> S.get
+      'D' -> MStockDirectory            <$> S.get
+      'H' -> MStockTradingAction        <$> S.get
+      'Y' -> MREGSHORestriction         <$> S.get
+      'L' -> MMarketParticipantPosition <$> S.get
+      _   -> MOther c                   <$> S.get
+  put = undefined
+
 messageType :: Message -> Char               
-messageType (MSystemEvent        _) = 'S'
-messageType (MStockDirectory     _) = 'D'
-messageType (MStockTradingAction _) = 'H'
-messageType (MREGSHORestriction  _) = 'Y'
+messageType (MSystemEvent               _) = 'S'
+messageType (MStockDirectory            _) = 'D'
+messageType (MStockTradingAction        _) = 'H'
+messageType (MREGSHORestriction         _) = 'Y'
+messageType (MMarketParticipantPosition _) = 'L'
