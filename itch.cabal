@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 
 executable itch
   main-is:             Main.hs
-  -- other-modules:       
+  other-modules:       Data.ITCH.NASDAQ.NASDAQ50.Messages
   -- other-extensions:    
   build-depends:       base, bytestring, zlib, binary
   hs-source-dirs:      src
