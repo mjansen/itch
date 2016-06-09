@@ -151,6 +151,44 @@ instance S.Binary IPOQuotingPeriodUpdate where
 
 --------------------------------------------------------------------------------
 
+data AddOrder = AddOrder
+  { ao_stockLocate                 :: Word16
+  , ao_trackingNumber              :: Word16
+  , ao_timestamp                   :: TimeStamp6
+  , ao_orderReferenceNumber        :: Word64
+  , ao_buySellIndicator            :: Char
+  , ao_shares                      :: Word32
+  , ao_stock                       :: ShortByteString -- 8
+  , ao_price                       :: Word32 -- 4 decimal places
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary AddOrder where
+  get = AddOrder <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be <*> S.get
+                 <*> S.getWord32be <*> (BS.toShort <$> S.getByteString 8) <*> S.getWord32be
+  put = undefined
+
+--------------------------------------------------------------------------------
+
+data AddOrderMPIDAttr = AddOrderMPIDAttr
+  { aoa_stockLocate                 :: Word16
+  , aoa_trackingNumber              :: Word16
+  , aoa_timestamp                   :: TimeStamp6
+  , aoa_orderReferenceNumber        :: Word64
+  , aoa_buySellIndicator            :: Char
+  , aoa_shares                      :: Word32
+  , aoa_stock                       :: ShortByteString -- 8
+  , aoa_price                       :: Word32 -- 4 decimal places
+  , aoa_attribution                 :: ShortByteString -- 4
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary AddOrderMPIDAttr where
+  get = AddOrderMPIDAttr <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be <*> S.get
+                         <*> S.getWord32be <*> (BS.toShort <$> S.getByteString 8) <*> S.getWord32be
+                         <*> (BS.toShort <$> S.getByteString 4)
+  put = undefined
+
+--------------------------------------------------------------------------------
+
 data Other = Other
   { oth_content     :: ShortByteString
   } deriving (Eq, Ord, Show)
@@ -167,6 +205,8 @@ data Message = MSystemEvent SystemEvent
              | MMWCBDeclineLevel MWCBDeclineLevel
              | MMWCBBreach MWCBBreach
              | MIPOQuotingPeriodUpdate IPOQuotingPeriodUpdate
+             | MAddOrder AddOrder
+             | MAddOrderMPIDAttr AddOrderMPIDAttr
              | MOther Char Other
              deriving (Eq, Ord, Show)
 
@@ -182,6 +222,8 @@ instance S.Binary Message where
       'V' -> MMWCBDeclineLevel          <$> S.get
       'W' -> MMWCBBreach                <$> S.get
       'K' -> MIPOQuotingPeriodUpdate    <$> S.get
+      'A' -> MAddOrder                  <$> S.get
+      'F' -> MAddOrderMPIDAttr          <$> S.get
       _   -> MOther c                   <$> S.get
   put = undefined
 
@@ -194,3 +236,5 @@ messageType (MMarketParticipantPosition _) = 'L'
 messageType (MMWCBDeclineLevel          _) = 'V'
 messageType (MMWCBBreach                _) = 'W'
 messageType (MIPOQuotingPeriodUpdate    _) = 'K'
+messageType (MAddOrder                  _) = 'A'
+messageType (MAddOrderMPIDAttr          _) = 'F'
