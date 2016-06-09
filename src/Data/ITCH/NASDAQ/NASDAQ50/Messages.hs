@@ -250,6 +250,23 @@ instance S.Binary OrderDelete where
 
 --------------------------------------------------------------------------------
 
+data OrderReplace = OrderReplace
+  { or_stockLocate                  :: Word16
+  , or_trackingNumber               :: Word16
+  , or_timestamp                    :: TimeStamp6
+  , or_originalOrderReferenceNumber :: Word64
+  , or_newOrderReferenceNumber      :: Word64
+  , or_shares                       :: Word32
+  , or_price                        :: Word32 -- 4 decimal places
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary OrderReplace where
+  get = OrderReplace <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be <*> S.getWord64be
+                     <*> S.getWord32be <*> S.getWord32be
+  put = undefined
+
+--------------------------------------------------------------------------------
+
 data Other = Other
   { oth_content     :: ShortByteString
   } deriving (Eq, Ord, Show)
@@ -272,6 +289,7 @@ data Message = MSystemEvent SystemEvent
              | MOrderExecutedWithPrice OrderExecutedWithPrice
              | MOrderCancel OrderCancel
              | MOrderDelete OrderDelete
+             | MOrderReplace OrderReplace
              | MOther Char Other
              deriving (Eq, Ord, Show)
 
@@ -293,6 +311,7 @@ instance S.Binary Message where
       'C' -> MOrderExecutedWithPrice    <$> S.get
       'X' -> MOrderCancel               <$> S.get
       'D' -> MOrderDelete               <$> S.get
+      'U' -> MOrderReplace              <$> S.get
       _   -> MOther c                   <$> S.get
   put = undefined
 
@@ -311,3 +330,4 @@ messageType (MOrderExecuted             _) = 'E'
 messageType (MOrderExecutedWithPrice    _) = 'C'
 messageType (MOrderCancel               _) = 'X'
 messageType (MOrderDelete               _) = 'D'
+messageType (MOrderReplace              _) = 'U'
