@@ -134,6 +134,23 @@ instance S.Binary MWCBBreach where
 
 --------------------------------------------------------------------------------
 
+data IPOQuotingPeriodUpdate = IPOQuotingPeriodUpdate
+  { qpu_stockLocate                 :: Word16
+  , qpu_trackingNumber              :: Word16
+  , qpu_timestamp                   :: TimeStamp6
+  , qpu_stock                       :: ShortByteString -- 8
+  , qpu_quotationReleaseTime        :: Word32
+  , qpu_quotationReleaseQualifier   :: Char
+  , qpu_price                       :: Word32 -- 4 decimal places
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary IPOQuotingPeriodUpdate where
+  get = IPOQuotingPeriodUpdate <$> S.getWord16be <*> S.getWord16be <*> S.get <*> (BS.toShort <$> S.getByteString 8)
+                               <*> S.getWord32be <*> S.get <*> S.getWord32be
+  put = undefined
+
+--------------------------------------------------------------------------------
+
 data Other = Other
   { oth_content     :: ShortByteString
   } deriving (Eq, Ord, Show)
@@ -149,6 +166,7 @@ data Message = MSystemEvent SystemEvent
              | MMarketParticipantPosition MarketParticipantPosition
              | MMWCBDeclineLevel MWCBDeclineLevel
              | MMWCBBreach MWCBBreach
+             | MIPOQuotingPeriodUpdate IPOQuotingPeriodUpdate
              | MOther Char Other
              deriving (Eq, Ord, Show)
 
@@ -163,6 +181,7 @@ instance S.Binary Message where
       'L' -> MMarketParticipantPosition <$> S.get
       'V' -> MMWCBDeclineLevel          <$> S.get
       'W' -> MMWCBBreach                <$> S.get
+      'K' -> MIPOQuotingPeriodUpdate    <$> S.get
       _   -> MOther c                   <$> S.get
   put = undefined
 
@@ -174,3 +193,4 @@ messageType (MREGSHORestriction         _) = 'Y'
 messageType (MMarketParticipantPosition _) = 'L'
 messageType (MMWCBDeclineLevel          _) = 'V'
 messageType (MMWCBBreach                _) = 'W'
+messageType (MIPOQuotingPeriodUpdate    _) = 'K'
