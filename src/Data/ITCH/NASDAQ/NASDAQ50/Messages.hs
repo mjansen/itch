@@ -223,6 +223,33 @@ instance S.Binary OrderExecutedWithPrice where
 
 --------------------------------------------------------------------------------
 
+data OrderCancel = OrderCancel
+  { oc_stockLocate                 :: Word16
+  , oc_trackingNumber              :: Word16
+  , oc_timestamp                   :: TimeStamp6
+  , oc_orderReferenceNumber        :: Word64
+  , oc_cancelledShares             :: Word32
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary OrderCancel where
+  get = OrderCancel <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be <*> S.getWord32be
+  put = undefined
+
+--------------------------------------------------------------------------------
+
+data OrderDelete = OrderDelete
+  { od_stockLocate                 :: Word16
+  , od_trackingNumber              :: Word16
+  , od_timestamp                   :: TimeStamp6
+  , od_orderReferenceNumber        :: Word64
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary OrderDelete where
+  get = OrderDelete <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be
+  put = undefined
+
+--------------------------------------------------------------------------------
+
 data Other = Other
   { oth_content     :: ShortByteString
   } deriving (Eq, Ord, Show)
@@ -243,6 +270,8 @@ data Message = MSystemEvent SystemEvent
              | MAddOrderMPIDAttr AddOrderMPIDAttr
              | MOrderExecuted OrderExecuted
              | MOrderExecutedWithPrice OrderExecutedWithPrice
+             | MOrderCancel OrderCancel
+             | MOrderDelete OrderDelete
              | MOther Char Other
              deriving (Eq, Ord, Show)
 
@@ -262,6 +291,8 @@ instance S.Binary Message where
       'F' -> MAddOrderMPIDAttr          <$> S.get
       'E' -> MOrderExecuted             <$> S.get
       'C' -> MOrderExecutedWithPrice    <$> S.get
+      'X' -> MOrderCancel               <$> S.get
+      'D' -> MOrderDelete               <$> S.get
       _   -> MOther c                   <$> S.get
   put = undefined
 
@@ -278,3 +309,5 @@ messageType (MAddOrder                  _) = 'A'
 messageType (MAddOrderMPIDAttr          _) = 'F'
 messageType (MOrderExecuted             _) = 'E'
 messageType (MOrderExecutedWithPrice    _) = 'C'
+messageType (MOrderCancel               _) = 'X'
+messageType (MOrderDelete               _) = 'D'
