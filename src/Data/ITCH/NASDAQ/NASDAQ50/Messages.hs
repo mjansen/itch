@@ -189,6 +189,40 @@ instance S.Binary AddOrderMPIDAttr where
 
 --------------------------------------------------------------------------------
 
+data OrderExecuted = OrderExecuted
+  { oe_stockLocate                 :: Word16
+  , oe_trackingNumber              :: Word16
+  , oe_timestamp                   :: TimeStamp6
+  , oe_orderReferenceNumber        :: Word64
+  , oe_executedShares              :: Word32
+  , oe_matchNumber                 :: Word64
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary OrderExecuted where
+  get = OrderExecuted <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be
+                      <*> S.getWord32be <*> S.getWord64be
+  put = undefined
+
+--------------------------------------------------------------------------------
+
+data OrderExecutedWithPrice = OrderExecutedWithPrice
+  { oewp_stockLocate                 :: Word16
+  , oewp_trackingNumber              :: Word16
+  , oewp_timestamp                   :: TimeStamp6
+  , oewp_orderReferenceNumber        :: Word64
+  , oewp_executedShares              :: Word32
+  , oewp_matchNumber                 :: Word64
+  , oewp_printable                   :: Char
+  , oewp_executionPrice              :: Word32
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary OrderExecutedWithPrice where
+  get = OrderExecutedWithPrice <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be
+                               <*> S.getWord32be <*> S.getWord64be <*> S.get <*> S.getWord32be
+  put = undefined
+
+--------------------------------------------------------------------------------
+
 data Other = Other
   { oth_content     :: ShortByteString
   } deriving (Eq, Ord, Show)
@@ -207,6 +241,8 @@ data Message = MSystemEvent SystemEvent
              | MIPOQuotingPeriodUpdate IPOQuotingPeriodUpdate
              | MAddOrder AddOrder
              | MAddOrderMPIDAttr AddOrderMPIDAttr
+             | MOrderExecuted OrderExecuted
+             | MOrderExecutedWithPrice OrderExecutedWithPrice
              | MOther Char Other
              deriving (Eq, Ord, Show)
 
@@ -224,6 +260,8 @@ instance S.Binary Message where
       'K' -> MIPOQuotingPeriodUpdate    <$> S.get
       'A' -> MAddOrder                  <$> S.get
       'F' -> MAddOrderMPIDAttr          <$> S.get
+      'E' -> MOrderExecuted             <$> S.get
+      'C' -> MOrderExecutedWithPrice    <$> S.get
       _   -> MOther c                   <$> S.get
   put = undefined
 
@@ -238,3 +276,5 @@ messageType (MMWCBBreach                _) = 'W'
 messageType (MIPOQuotingPeriodUpdate    _) = 'K'
 messageType (MAddOrder                  _) = 'A'
 messageType (MAddOrderMPIDAttr          _) = 'F'
+messageType (MOrderExecuted             _) = 'E'
+messageType (MOrderExecutedWithPrice    _) = 'C'
