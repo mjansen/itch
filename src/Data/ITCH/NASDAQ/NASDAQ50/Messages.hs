@@ -267,6 +267,58 @@ instance S.Binary OrderReplace where
 
 --------------------------------------------------------------------------------
 
+data Trade = Trade
+  { t_stockLocate                  :: Word16
+  , t_trackingNumber               :: Word16
+  , t_timestamp                    :: TimeStamp6
+  , t_orderReferenceNumber         :: Word64
+  , t_buySellIndicator             :: Char
+  , t_shares                       :: Word32
+  , t_stock                        :: ShortByteString -- 8
+  , t_price                        :: Word32 -- 4 decimal places
+  , t_matchNumer                   :: Word64
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary Trade where
+  get = Trade <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be <*> S.get
+              <*> S.getWord32be <*> (BS.toShort <$> S.getByteString 8) <*> S.getWord32be
+              <*> S.getWord64be
+  put = undefined
+
+--------------------------------------------------------------------------------
+
+data CrossTrade = CrossTrade
+  { ct_stockLocate                  :: Word16
+  , ct_trackingNumber               :: Word16
+  , ct_timestamp                    :: TimeStamp6
+  , ct_shares                       :: Word64
+  , ct_stock                        :: ShortByteString -- 8
+  , ct_price                        :: Word32 -- 4 decimal places
+  , ct_matchNumber                  :: Word64
+  , ct_crossType                    :: Char
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary CrossTrade where
+  get = CrossTrade <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be
+                   <*> (BS.toShort <$> S.getByteString 8) <*> S.getWord32be
+                   <*> S.getWord64be <*> S.get
+  put = undefined
+
+--------------------------------------------------------------------------------
+
+data BrokenTrade = BrokenTrade
+  { bt_stockLocate                  :: Word16
+  , bt_trackingNumber               :: Word16
+  , bt_timestamp                    :: TimeStamp6
+  , bt_matchNumber                  :: Word64
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary BrokenTrade where
+  get = BrokenTrade <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be
+  put = undefined
+
+--------------------------------------------------------------------------------
+
 data Other = Other
   { oth_content     :: ShortByteString
   } deriving (Eq, Ord, Show)
@@ -290,6 +342,9 @@ data Message = MSystemEvent SystemEvent
              | MOrderCancel OrderCancel
              | MOrderDelete OrderDelete
              | MOrderReplace OrderReplace
+             | MTrade Trade
+             | MCrossTrade CrossTrade
+             | MBrokenTrade BrokenTrade
              | MOther Char Other
              deriving (Eq, Ord, Show)
 
@@ -312,6 +367,9 @@ instance S.Binary Message where
       'X' -> MOrderCancel               <$> S.get
       'D' -> MOrderDelete               <$> S.get
       'U' -> MOrderReplace              <$> S.get
+      'P' -> MTrade                     <$> S.get
+      'Q' -> MCrossTrade                <$> S.get
+      'B' -> MBrokenTrade               <$> S.get
       _   -> MOther c                   <$> S.get
   put = undefined
 
@@ -331,3 +389,6 @@ messageType (MOrderExecutedWithPrice    _) = 'C'
 messageType (MOrderCancel               _) = 'X'
 messageType (MOrderDelete               _) = 'D'
 messageType (MOrderReplace              _) = 'U'
+messageType (MTrade                     _) = 'P'
+messageType (MCrossTrade                _) = 'Q'
+messageType (MBrokenTrade               _) = 'B'
