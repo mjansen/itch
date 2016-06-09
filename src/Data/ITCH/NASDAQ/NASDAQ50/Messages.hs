@@ -103,6 +103,37 @@ instance S.Binary MarketParticipantPosition where
                                   <*> (BS.toShort <$> S.getByteString 8) <*> S.get <*> S.get <*> S.get
   put = undefined
 
+--------------------------------------------------------------------------------
+
+data MWCBDeclineLevel = MWCBDeclineLevel
+  { mdl_stockLocate                 :: Word16
+  , mdl_trackingNumber              :: Word16
+  , mdl_timestamp                   :: TimeStamp6
+  , mdl_level1                      :: Word64   -- fixed point 8 decimals
+  , mdl_level2                      :: Word64   -- fixed point 8 decimals
+  , mdl_level3                      :: Word64   -- fixed point 8 decimals
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary MWCBDeclineLevel where
+  get = MWCBDeclineLevel <$> S.getWord16be <*> S.getWord16be <*> S.get
+                         <*> S.getWord64be <*> S.getWord64be <*> S.getWord64be
+  put = undefined
+
+--------------------------------------------------------------------------------
+
+data MWCBBreach = MWCBBreach
+  { mbr_stockLocate                 :: Word16
+  , mbr_trackingNumber              :: Word16
+  , mbr_timestamp                   :: TimeStamp6
+  , mbr_breachedLevel               :: Char
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary MWCBBreach where
+  get = MWCBBreach <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.get
+  put = undefined
+
+--------------------------------------------------------------------------------
+
 data Other = Other
   { oth_content     :: ShortByteString
   } deriving (Eq, Ord, Show)
@@ -116,6 +147,8 @@ data Message = MSystemEvent SystemEvent
              | MStockTradingAction StockTradingAction
              | MREGSHORestriction REGSHORestriction
              | MMarketParticipantPosition MarketParticipantPosition
+             | MMWCBDeclineLevel MWCBDeclineLevel
+             | MMWCBBreach MWCBBreach
              | MOther Char Other
              deriving (Eq, Ord, Show)
 
@@ -128,6 +161,8 @@ instance S.Binary Message where
       'H' -> MStockTradingAction        <$> S.get
       'Y' -> MREGSHORestriction         <$> S.get
       'L' -> MMarketParticipantPosition <$> S.get
+      'V' -> MMWCBDeclineLevel          <$> S.get
+      'W' -> MMWCBBreach                <$> S.get
       _   -> MOther c                   <$> S.get
   put = undefined
 
@@ -137,3 +172,5 @@ messageType (MStockDirectory            _) = 'R'
 messageType (MStockTradingAction        _) = 'H'
 messageType (MREGSHORestriction         _) = 'Y'
 messageType (MMarketParticipantPosition _) = 'L'
+messageType (MMWCBDeclineLevel          _) = 'V'
+messageType (MMWCBBreach                _) = 'W'
