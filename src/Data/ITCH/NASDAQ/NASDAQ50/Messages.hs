@@ -319,6 +319,47 @@ instance S.Binary BrokenTrade where
 
 --------------------------------------------------------------------------------
 
+data NOII = NOII
+  { noii_stockLocate                  :: Word16
+  , noii_trackingNumber               :: Word16
+  , noii_timestamp                    :: TimeStamp6
+  , noii_paidShares                   :: Word64
+  , noii_imbalanceShares              :: Word64
+  , noii_imbalanceDirection           :: Char
+  , noii_stock                        :: ShortByteString
+  , noii_farPrice                     :: Word32
+  , noii_nearPrice                    :: Word32
+  , noii_currentReferencePrice        :: Word32
+  , noii_crossType                    :: Char
+  , noii_priceVariationIndicator      :: Char
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary NOII where
+  get = NOII <$> S.getWord16be <*> S.getWord16be <*> S.get
+             <*> S.getWord64be <*> S.getWord64be <*> S.get
+             <*> (BS.toShort <$> S.getByteString 8)
+             <*> S.getWord32be <*> S.getWord32be <*> S.getWord32be
+             <*> S.get <*> S.get
+  put = undefined
+
+--------------------------------------------------------------------------------
+
+data RPII = RPII
+  { rpii_stockLocate                  :: Word16
+  , rpii_trackingNumber               :: Word16
+  , rpii_timestamp                    :: TimeStamp6
+  , rpii_stock                        :: ShortByteString
+  , rpii_interestFlag                 :: Char
+  } deriving (Eq, Ord, Show)
+
+instance S.Binary RPII where
+  get = RPII <$> S.getWord16be <*> S.getWord16be <*> S.get
+             <*> (BS.toShort <$> S.getByteString 8)
+             <*> S.get
+  put = undefined
+
+--------------------------------------------------------------------------------
+
 data Other = Other
   { oth_content     :: ShortByteString
   } deriving (Eq, Ord, Show)
@@ -345,6 +386,8 @@ data Message = MSystemEvent SystemEvent
              | MTrade Trade
              | MCrossTrade CrossTrade
              | MBrokenTrade BrokenTrade
+             | MNOII NOII
+             | MRPII RPII
              | MOther Char Other
              deriving (Eq, Ord, Show)
 
@@ -370,6 +413,8 @@ instance S.Binary Message where
       'P' -> MTrade                     <$> S.get
       'Q' -> MCrossTrade                <$> S.get
       'B' -> MBrokenTrade               <$> S.get
+      'I' -> MNOII                      <$> S.get
+      'N' -> MRPII                      <$> S.get
       _   -> MOther c                   <$> S.get
   put = undefined
 
@@ -392,3 +437,5 @@ messageType (MOrderReplace              _) = 'U'
 messageType (MTrade                     _) = 'P'
 messageType (MCrossTrade                _) = 'Q'
 messageType (MBrokenTrade               _) = 'B'
+messageType (MNOII                      _) = 'I'
+messageType (MRPII                      _) = 'N'
