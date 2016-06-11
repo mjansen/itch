@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+
 module Data.ITCH.NASDAQ.NASDAQ50.Messages where
 
 import Data.Word
@@ -95,7 +96,7 @@ data MarketParticipantPosition = MarketParticipantPosition
   , mpp_stock                       :: ShortByteString -- 8
   , mpp_primaryMarketMaker          :: Char
   , mpp_marketMakerMode             :: Char
-  , mpp_marketPartcipant            :: Char
+  , mpp_marketPartcipantState       :: Char
   } deriving (Eq, Ord, Show)
 
 instance S.Binary MarketParticipantPosition where
