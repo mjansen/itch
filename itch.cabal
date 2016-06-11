@@ -19,7 +19,7 @@ executable itch
   main-is:             Main.hs
   other-modules:       Data.ITCH.NASDAQ.NASDAQ50.Messages
   -- other-extensions:    
-  build-depends:       base, bytestring, zlib, binary, optparse-applicative
+  build-depends:       base, bytestring, zlib, binary, optparse-applicative, containers
   hs-source-dirs:      src, src/Data/ITCH/NASDAQ/NASDAQ50
   default-language:    Haskell2010
   ghc-options:         -O2 -Wall
