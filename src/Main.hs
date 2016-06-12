@@ -67,6 +67,10 @@ showOrders2 :: Word16 -> FilePath -> IO ()
 showOrders2 n fileName =
   mapM_ print =<< (filter ((== n) . N50.stockLocate) . map decodeMessage . decodeToList . GZ.decompress <$> L.readFile fileName)
 
+showOrders3 :: Word16 -> FilePath -> IO ()
+showOrders3 n fileName =
+  mapM_ print =<< (consolidate2 (OrderBook BS.empty Set.empty Set.empty) . filter ((== n) . N50.stockLocate) . map decodeMessage . decodeToList . GZ.decompress <$> L.readFile fileName)
+
 consolidate :: Set.Set Word64 -> [Message] -> [Set.Set Word64]
 consolidate s [] = []
 consolidate s (m:ms) =
@@ -109,6 +113,10 @@ data BidAsk = BidAsk
 data Order = OBid BidAsk | OAsk BidAsk
            deriving (Eq, Ord, Show)
 
+toBidAsk :: Order -> BidAsk
+toBidAsk (OBid x) = x
+toBidAsk (OAsk x) = x
+
 addToOrderBook :: Order -> OrderBook -> OrderBook
 addToOrderBook (OBid o) ob = ob { ob_bids = o `Set.insert` ob_bids ob }
 addToOrderBook (OAsk o) ob = ob { ob_asks = o `Set.insert` ob_asks ob }
@@ -120,11 +128,19 @@ deleteFromOrderBook (OAsk o) ob = ob { ob_asks = o `Set.delete` ob_asks ob }
 lookupOrderInBook :: Word64 -> OrderBook -> Maybe Order
 lookupOrderInBook refNum ob =
   let o = BidAsk refNum 0 0 (N50.T6 0)
-  in case ( Set.lookupLE o (ob_asks ob)
-          , Set.lookupLE o (ob_bids ob) ) of
+      lookMoreClosely o'' = if refNum == ba_referenceNumber o'' then Just o'' else Nothing
+  in case ( lookMoreClosely =<< Set.lookupGE o (ob_asks ob)
+          , lookMoreClosely =<< Set.lookupGE o (ob_bids ob) ) of
        ( Just o', _       ) -> Just (OAsk o')
        ( Nothing, Just o' ) -> Just (OBid o')
        ( Nothing, Nothing ) -> Nothing
+
+subtractFromOrderBook :: Word64 -> Word32 -> OrderBook -> OrderBook
+subtractFromOrderBook refNum shares ob =
+  case lookupOrderInBook refNum ob of
+    Nothing -> error $ "subtractFromOrderBook:could not find order " ++ show refNum
+    Just (OBid o)  -> addToOrderBook (OBid $ o { ba_shares = ba_shares o - shares }) . deleteFromOrderBook (OBid o) $ ob
+    Just (OAsk o)  -> addToOrderBook (OAsk $ o { ba_shares = ba_shares o - shares }) . deleteFromOrderBook (OAsk o) $ ob
 
 fromAddOrder :: N50.AddOrder -> Order
 fromAddOrder (N50.AddOrder sl tn ts rn bs sh st pr)
@@ -141,21 +157,44 @@ fromAddOrderMPIDAttr (N50.AddOrderMPIDAttr sl tn ts rn bs sh st pr at)
 -- type OrderBooks = Map.Map ShortByteString OrderBook
 
 pOrder :: N50.Message -> OrderBook -> OrderBook
-pOrder (N50.MAddOrder         x) ob = addToOrderBook (fromAddOrder x) ob
--- pOrder (N50.MAddOrderMPIDAttr x) s = Set.insert (N50.aoa_orderReferenceNumber x) s
--- pOrder (N50.MOrderExecuted    x) s = s
--- pOrder (N50.MOrderExecutedWithPrice x) s = s
--- pOrder (N50.MOrderCancel      x) s = Set.delete (N50.oc_orderReferenceNumber x) s
+pOrder (N50.MAddOrder         x) ob = addToOrderBook (fromAddOrder         x) ob
+pOrder (N50.MAddOrderMPIDAttr x) ob = addToOrderBook (fromAddOrderMPIDAttr x) ob
+pOrder (N50.MOrderExecuted    x) ob =
+  let refNum = N50.oe_orderReferenceNumber x
+  in subtractFromOrderBook refNum (N50.oe_executedShares x) ob
+pOrder (N50.MOrderExecutedWithPrice x) ob =
+  let refNum = N50.oewp_orderReferenceNumber x
+  in subtractFromOrderBook refNum (N50.oewp_executedShares x) ob
+pOrder (N50.MOrderCancel      x) ob =
+  let refNum = N50.oc_orderReferenceNumber x
+  in subtractFromOrderBook refNum (N50.oc_cancelledShares x) ob
 pOrder (N50.MOrderDelete      x) ob =
   let refNum = N50.od_orderReferenceNumber x
   in case lookupOrderInBook refNum ob of
-       Nothing -> error $ "error: cannot find order " ++ show refNum
+       Nothing -> error $ "delete: cannot find order " ++ show refNum
        Just o  -> deleteFromOrderBook o ob
--- pOrder (N50.MOrderReplace     x) s = N50.or_newOrderReferenceNumber x `Set.insert` Set.delete (N50.or_originalOrderReferenceNumber x) s
--- pOrder (N50.MTrade            x) s = s
--- pOrder (N50.MCrossTrade       x) s = s
--- pOrder (N50.MBrokenTrade      x) s = s
--- pOrder _                         s = s
+pOrder (N50.MOrderReplace     x) ob =
+  let refNum1 = N50.or_originalOrderReferenceNumber x
+  in case lookupOrderInBook refNum1 ob of
+       Nothing -> error $ "replace: cannot find order " ++ show refNum1
+       Just o  -> let ba  = (toBidAsk o)
+                      ba' = ba { ba_referenceNumber = N50.or_newOrderReferenceNumber x
+                               , ba_shares          = N50.or_shares x
+                               , ba_price           = N50.or_price x
+                               , ba_timeStamp       = N50.or_timestamp x
+                               }
+                      o'  = case o of OBid _ -> OBid ba'; OAsk _ -> OAsk ba'
+                  in addToOrderBook o' . deleteFromOrderBook o $ ob
+pOrder (N50.MTrade            x) ob = ob
+pOrder (N50.MCrossTrade       x) ob = ob
+pOrder (N50.MBrokenTrade      x) ob = ob
+pOrder _                         ob = ob
+
+consolidate2 :: OrderBook -> [N50.Message] -> [OrderBook]
+consolidate2 s [] = []
+consolidate2 s (m:ms) =
+  let s' = pOrder m s
+  in s' : consolidate2 s' ms
 
 --------------------------------------------------------------------------------
 
@@ -164,6 +203,7 @@ opts = OA.subparser
   (     OA.command "show"    (OA.info (showRecords <$> OA.argument OA.str OA.idm) (OA.progDesc "show all records in TARGET"))
   OA.<> OA.command "orders1" (OA.info (showOrders1 <$> OA.argument OA.str OA.idm) (OA.progDesc "show orders1 in TARGET"))
   OA.<> OA.command "orders2" (OA.info (showOrders2 <$> (read <$> OA.argument OA.str OA.idm) <*> OA.argument OA.str OA.idm) (OA.progDesc "show orders2 in TARGET"))
+  OA.<> OA.command "orders3" (OA.info (showOrders3 <$> (read <$> OA.argument OA.str OA.idm) <*> OA.argument OA.str OA.idm) (OA.progDesc "show orders3 in TARGET"))
   OA.<> OA.command "stop"    (OA.info (pure (return ())) OA.idm) )
 
 main :: IO ()
