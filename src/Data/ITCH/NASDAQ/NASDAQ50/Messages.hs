@@ -22,6 +22,11 @@ instance S.Binary TimeStamp6 where
     return . T6 $ (a*(2^32)) + b
   put (T6 x) = S.putWord16be (fromIntegral $ x `quot` (2^32)) >> S.putWord32be (fromIntegral $ x `mod` (2^32))
 
+class MessageBasics a where
+  stockLocate    :: a -> Word16
+  trackingNumber :: a -> Word16
+  timestamp      :: a -> TimeStamp6
+
 data SystemEvent = SystemEvent
   { sem_stockLocate    :: Word16
   , sem_trackingNumber :: Word16
@@ -32,10 +37,15 @@ data SystemEvent = SystemEvent
 instance S.Binary SystemEvent where
   get = SystemEvent <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.get
   put (SystemEvent a b c d) = S.put a >> S.put b >> S.put c >> S.put d
+
+instance MessageBasics SystemEvent where
+  stockLocate    = sem_stockLocate
+  trackingNumber = sem_trackingNumber
+  timestamp      = sem_timestamp
   
 data StockDirectory = StockDirectory
   { sdm_stockLocate                 :: Word16
-  , sdm_tracking                    :: Word16
+  , sdm_trackingNumber              :: Word16
   , sdm_timestamp                   :: TimeStamp6
   , sdm_stock                       :: ShortByteString -- 8
   , sdm_marketCategory              :: Char
@@ -60,14 +70,19 @@ instance S.Binary StockDirectory where
                        <*> S.get <*> S.getWord32be <*> S.get
   put = undefined
 
+instance MessageBasics StockDirectory where
+  stockLocate    = sdm_stockLocate
+  trackingNumber = sdm_trackingNumber
+  timestamp      = sdm_timestamp
+  
 data StockTradingAction = StockTradingAction
   { sta_stockLocate                 :: Word16
-  , sta_tracking                    :: Word16
+  , sta_trackingNumber              :: Word16
   , sta_timestamp                   :: TimeStamp6
   , sta_stock                       :: ShortByteString -- 8
   , sta_tradingState                :: Char
   , sta_reserved                    :: Char
-  , str_reason                      :: ShortByteString -- 4
+  , sta_reason                      :: ShortByteString -- 4
   } deriving (Eq, Ord, Show)
 
 instance S.Binary StockTradingAction where
@@ -75,9 +90,14 @@ instance S.Binary StockTradingAction where
                            <*> S.get <*> S.get <*> (BS.toShort <$> S.getByteString 4)
   put = undefined
 
+instance MessageBasics StockTradingAction where
+  stockLocate    = sta_stockLocate
+  trackingNumber = sta_trackingNumber
+  timestamp      = sta_timestamp
+  
 data REGSHORestriction = REGSHORestriction
   { rsr_stockLocate                 :: Word16
-  , rsr_tracking                    :: Word16
+  , rsr_trackingNumber              :: Word16
   , rsr_timestamp                   :: TimeStamp6
   , rsr_stock                       :: ShortByteString -- 8
   , rsr_REGSHOAction                :: Char
@@ -88,9 +108,14 @@ instance S.Binary REGSHORestriction where
                           <*> (BS.toShort <$> S.getByteString 8) <*> S.get
   put = undefined
 
+instance MessageBasics REGSHORestriction where
+  stockLocate    = rsr_stockLocate
+  trackingNumber = rsr_trackingNumber
+  timestamp      = rsr_timestamp
+
 data MarketParticipantPosition = MarketParticipantPosition
   { mpp_stockLocate                 :: Word16
-  , mpp_tracking                    :: Word16
+  , mpp_trackingNumber              :: Word16
   , mpp_timestamp                   :: TimeStamp6
   , mpp_mpid                        :: Word32
   , mpp_stock                       :: ShortByteString -- 8
@@ -103,6 +128,11 @@ instance S.Binary MarketParticipantPosition where
   get = MarketParticipantPosition <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord32be
                                   <*> (BS.toShort <$> S.getByteString 8) <*> S.get <*> S.get <*> S.get
   put = undefined
+
+instance MessageBasics MarketParticipantPosition where
+  stockLocate    = mpp_stockLocate
+  trackingNumber = mpp_trackingNumber
+  timestamp      = mpp_timestamp
 
 --------------------------------------------------------------------------------
 
@@ -120,6 +150,11 @@ instance S.Binary MWCBDeclineLevel where
                          <*> S.getWord64be <*> S.getWord64be <*> S.getWord64be
   put = undefined
 
+instance MessageBasics MWCBDeclineLevel where
+  stockLocate    = mdl_stockLocate
+  trackingNumber = mdl_trackingNumber
+  timestamp      = mdl_timestamp
+
 --------------------------------------------------------------------------------
 
 data MWCBBreach = MWCBBreach
@@ -132,6 +167,11 @@ data MWCBBreach = MWCBBreach
 instance S.Binary MWCBBreach where
   get = MWCBBreach <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.get
   put = undefined
+
+instance MessageBasics MWCBBreach where
+  stockLocate    = mbr_stockLocate
+  trackingNumber = mbr_trackingNumber
+  timestamp      = mbr_timestamp
 
 --------------------------------------------------------------------------------
 
@@ -150,6 +190,11 @@ instance S.Binary IPOQuotingPeriodUpdate where
                                <*> S.getWord32be <*> S.get <*> S.getWord32be
   put = undefined
 
+instance MessageBasics IPOQuotingPeriodUpdate where
+  stockLocate    = qpu_stockLocate
+  trackingNumber = qpu_trackingNumber
+  timestamp      = qpu_timestamp
+
 --------------------------------------------------------------------------------
 
 data AddOrder = AddOrder
@@ -167,6 +212,11 @@ instance S.Binary AddOrder where
   get = AddOrder <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be <*> S.get
                  <*> S.getWord32be <*> (BS.toShort <$> S.getByteString 8) <*> S.getWord32be
   put = undefined
+
+instance MessageBasics AddOrder where
+  stockLocate    = ao_stockLocate
+  trackingNumber = ao_trackingNumber
+  timestamp      = ao_timestamp
 
 --------------------------------------------------------------------------------
 
@@ -188,6 +238,11 @@ instance S.Binary AddOrderMPIDAttr where
                          <*> (BS.toShort <$> S.getByteString 4)
   put = undefined
 
+instance MessageBasics AddOrderMPIDAttr where
+  stockLocate    = aoa_stockLocate
+  trackingNumber = aoa_trackingNumber
+  timestamp      = aoa_timestamp
+
 --------------------------------------------------------------------------------
 
 data OrderExecuted = OrderExecuted
@@ -203,6 +258,11 @@ instance S.Binary OrderExecuted where
   get = OrderExecuted <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be
                       <*> S.getWord32be <*> S.getWord64be
   put = undefined
+
+instance MessageBasics OrderExecuted where
+  stockLocate    = oe_stockLocate
+  trackingNumber = oe_trackingNumber
+  timestamp      = oe_timestamp
 
 --------------------------------------------------------------------------------
 
@@ -222,6 +282,11 @@ instance S.Binary OrderExecutedWithPrice where
                                <*> S.getWord32be <*> S.getWord64be <*> S.get <*> S.getWord32be
   put = undefined
 
+instance MessageBasics OrderExecutedWithPrice where
+  stockLocate    = oewp_stockLocate
+  trackingNumber = oewp_trackingNumber
+  timestamp      = oewp_timestamp
+
 --------------------------------------------------------------------------------
 
 data OrderCancel = OrderCancel
@@ -236,6 +301,11 @@ instance S.Binary OrderCancel where
   get = OrderCancel <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be <*> S.getWord32be
   put = undefined
 
+instance MessageBasics OrderCancel where
+  stockLocate    = oc_stockLocate
+  trackingNumber = oc_trackingNumber
+  timestamp      = oc_timestamp
+
 --------------------------------------------------------------------------------
 
 data OrderDelete = OrderDelete
@@ -248,6 +318,11 @@ data OrderDelete = OrderDelete
 instance S.Binary OrderDelete where
   get = OrderDelete <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be
   put = undefined
+
+instance MessageBasics OrderDelete where
+  stockLocate    = od_stockLocate
+  trackingNumber = od_trackingNumber
+  timestamp      = od_timestamp
 
 --------------------------------------------------------------------------------
 
@@ -265,6 +340,11 @@ instance S.Binary OrderReplace where
   get = OrderReplace <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be <*> S.getWord64be
                      <*> S.getWord32be <*> S.getWord32be
   put = undefined
+
+instance MessageBasics OrderReplace where
+  stockLocate    = or_stockLocate
+  trackingNumber = or_trackingNumber
+  timestamp      = or_timestamp
 
 --------------------------------------------------------------------------------
 
@@ -286,6 +366,11 @@ instance S.Binary Trade where
               <*> S.getWord64be
   put = undefined
 
+instance MessageBasics Trade where
+  stockLocate    = t_stockLocate
+  trackingNumber = t_trackingNumber
+  timestamp      = t_timestamp
+
 --------------------------------------------------------------------------------
 
 data CrossTrade = CrossTrade
@@ -305,6 +390,11 @@ instance S.Binary CrossTrade where
                    <*> S.getWord64be <*> S.get
   put = undefined
 
+instance MessageBasics CrossTrade where
+  stockLocate    = ct_stockLocate
+  trackingNumber = ct_trackingNumber
+  timestamp      = ct_timestamp
+
 --------------------------------------------------------------------------------
 
 data BrokenTrade = BrokenTrade
@@ -317,6 +407,11 @@ data BrokenTrade = BrokenTrade
 instance S.Binary BrokenTrade where
   get = BrokenTrade <$> S.getWord16be <*> S.getWord16be <*> S.get <*> S.getWord64be
   put = undefined
+
+instance MessageBasics BrokenTrade where
+  stockLocate    = bt_stockLocate
+  trackingNumber = bt_trackingNumber
+  timestamp      = bt_timestamp
 
 --------------------------------------------------------------------------------
 
@@ -343,6 +438,11 @@ instance S.Binary NOII where
              <*> S.get <*> S.get
   put = undefined
 
+instance MessageBasics NOII where
+  stockLocate    = noii_stockLocate
+  trackingNumber = noii_trackingNumber
+  timestamp      = noii_timestamp
+
 --------------------------------------------------------------------------------
 
 data RPII = RPII
@@ -358,6 +458,11 @@ instance S.Binary RPII where
              <*> (BS.toShort <$> S.getByteString 8)
              <*> S.get
   put = undefined
+
+instance MessageBasics RPII where
+  stockLocate    = rpii_stockLocate
+  trackingNumber = rpii_trackingNumber
+  timestamp      = rpii_timestamp
 
 --------------------------------------------------------------------------------
 
@@ -418,6 +523,30 @@ instance S.Binary Message where
       'N' -> MRPII                      <$> S.get
       _   -> MOther c                   <$> S.get
   put = undefined
+
+instance MessageBasics Message where
+  stockLocate (MSystemEvent               x) = stockLocate x
+  stockLocate (MStockDirectory            x) = stockLocate x
+  stockLocate (MStockTradingAction        x) = stockLocate x
+  stockLocate (MREGSHORestriction         x) = stockLocate x
+  stockLocate (MMarketParticipantPosition x) = stockLocate x
+  stockLocate (MMWCBDeclineLevel          x) = stockLocate x
+  stockLocate (MMWCBBreach                x) = stockLocate x
+  stockLocate (MIPOQuotingPeriodUpdate    x) = stockLocate x
+  stockLocate (MAddOrder                  x) = stockLocate x
+  stockLocate (MAddOrderMPIDAttr          x) = stockLocate x
+  stockLocate (MOrderExecuted             x) = stockLocate x
+  stockLocate (MOrderExecutedWithPrice    x) = stockLocate x
+  stockLocate (MOrderCancel               x) = stockLocate x
+  stockLocate (MOrderDelete               x) = stockLocate x
+  stockLocate (MOrderReplace              x) = stockLocate x
+  stockLocate (MTrade                     x) = stockLocate x
+  stockLocate (MCrossTrade                x) = stockLocate x
+  stockLocate (MBrokenTrade               x) = stockLocate x
+  stockLocate (MNOII                      x) = stockLocate x
+  stockLocate (MRPII                      x) = stockLocate x
+  trackingNumber = undefined
+  timestamp      = undefined
 
 messageType :: Message -> Char               
 messageType (MSystemEvent               _) = 'S'
