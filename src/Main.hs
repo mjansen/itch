@@ -14,7 +14,7 @@ import qualified Data.ByteString.Lazy   as L
 import qualified Data.ByteString.Short  as BS
 
 import qualified Data.Set               as Set
-import qualified Data.Map.Strict        as Map
+import qualified Data.IntMap.Strict        as Map
 
 import qualified Codec.Compression.GZip as GZ
 
@@ -222,14 +222,14 @@ consolidate2 s (m:ms) =
 
 --------------------------------------------------------------------------------
 
-type OrderBooks = Map.Map Word16 OrderBook
+type OrderBooks = Map.IntMap {- Word16 -} OrderBook
 
 -- (OrderBook BS.empty Set.empty Set.empty)
 
 consolidate3 :: OrderBooks -> [N50.Message] -> OrderBooks
 consolidate3 bs [] = bs
 consolidate3 bs (m:ms) =
-  let n   = N50.stockLocate m
+  let n   = fromIntegral $ N50.stockLocate m
       b   = maybe (OrderBook BS.empty Set.empty Set.empty) id . Map.lookup n $ bs
       b'  = pOrder m b
       bs' = deepseq b $ Map.insert n b' bs
