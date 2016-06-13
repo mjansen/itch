@@ -1,6 +1,9 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Main where
 
 import Control.Monad
+import Control.DeepSeq
 
 import Data.Word
 
@@ -11,12 +14,15 @@ import qualified Data.ByteString.Lazy   as L
 import qualified Data.ByteString.Short  as BS
 
 import qualified Data.Set               as Set
+import qualified Data.Map.Strict        as Map
 
 import qualified Codec.Compression.GZip as GZ
 
 import qualified Options.Applicative as OA
 
 import System.Environment
+
+import GHC.Generics
 
 import qualified Data.ITCH.NASDAQ.NASDAQ50.Messages as N50
 
@@ -71,6 +77,10 @@ showOrders3 :: Word16 -> FilePath -> IO ()
 showOrders3 n fileName =
   mapM_ print =<< (consolidate2 (OrderBook BS.empty Set.empty Set.empty) . filter ((== n) . N50.stockLocate) . map decodeMessage . decodeToList . GZ.decompress <$> L.readFile fileName)
 
+showOrders4 :: FilePath -> IO ()
+showOrders4 fileName =
+  mapM_ print . Map.toList =<< (consolidate3 Map.empty . map decodeMessage . decodeToList . GZ.decompress <$> L.readFile fileName)
+
 consolidate :: Set.Set Word64 -> [Message] -> [Set.Set Word64]
 consolidate s [] = []
 consolidate s (m:ms) =
@@ -101,14 +111,18 @@ data OrderBook = OrderBook
   { ob_stock :: ShortByteString
   , ob_bids  :: Set.Set BidAsk
   , ob_asks  :: Set.Set BidAsk
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show, Generic)
+
+instance NFData OrderBook
 
 data BidAsk = BidAsk
   { ba_referenceNumber :: Word64
   , ba_shares          :: Word32
   , ba_price           :: Word32
-  , ba_timeStamp       :: N50.TimeStamp6
-  } deriving (Eq, Ord, Show)
+  , ba_timestamp       :: N50.TimeStamp6
+  } deriving (Eq, Ord, Show, Generic)
+
+instance NFData BidAsk
 
 data Order = OBid BidAsk | OAsk BidAsk
            deriving (Eq, Ord, Show)
@@ -117,9 +131,19 @@ toBidAsk :: Order -> BidAsk
 toBidAsk (OBid x) = x
 toBidAsk (OAsk x) = x
 
-addToOrderBook :: Order -> OrderBook -> OrderBook
-addToOrderBook (OBid o) ob = ob { ob_bids = o `Set.insert` ob_bids ob }
-addToOrderBook (OAsk o) ob = ob { ob_asks = o `Set.insert` ob_asks ob }
+addToOrderBook = addToOrderBookNZ
+
+addToOrderBookA :: Order -> OrderBook -> OrderBook
+addToOrderBookA (OBid o) ob = ob { ob_bids = o `Set.insert` ob_bids ob }
+addToOrderBookA (OAsk o) ob = ob { ob_asks = o `Set.insert` ob_asks ob }
+
+addToOrderBookNZ :: Order -> OrderBook -> OrderBook
+addToOrderBookNZ (OBid o) ob | ba_shares o == 0 = ob
+                             | ba_shares o >  0 = ob { ob_bids = o `Set.insert` ob_bids ob }
+                             | otherwise        = error $ "attempt to add bid order for a negative nr of shares: " ++ show o
+addToOrderBookNZ (OAsk o) ob | ba_shares o == 0 = ob
+                             | ba_shares o >  0 = ob { ob_asks = o `Set.insert` ob_asks ob }
+                             | otherwise        = error $ "attempt to add ask order for a negative nr of shares: " ++ show o
 
 deleteFromOrderBook :: Order -> OrderBook -> OrderBook
 deleteFromOrderBook (OBid o) ob = ob { ob_bids = o `Set.delete` ob_bids ob }
@@ -135,12 +159,12 @@ lookupOrderInBook refNum ob =
        ( Nothing, Just o' ) -> Just (OBid o')
        ( Nothing, Nothing ) -> Nothing
 
-subtractFromOrderBook :: Word64 -> Word32 -> OrderBook -> OrderBook
-subtractFromOrderBook refNum shares ob =
+subtractFromOrderBook :: Word64 -> Word32 -> N50.TimeStamp6 -> OrderBook -> OrderBook
+subtractFromOrderBook refNum shares ts ob =
   case lookupOrderInBook refNum ob of
     Nothing -> error $ "subtractFromOrderBook:could not find order " ++ show refNum
-    Just (OBid o)  -> addToOrderBook (OBid $ o { ba_shares = ba_shares o - shares }) . deleteFromOrderBook (OBid o) $ ob
-    Just (OAsk o)  -> addToOrderBook (OAsk $ o { ba_shares = ba_shares o - shares }) . deleteFromOrderBook (OAsk o) $ ob
+    Just (OBid o)  -> addToOrderBook (OBid $ o { ba_shares = ba_shares o - shares, ba_timestamp = ts }) . deleteFromOrderBook (OBid o) $ ob
+    Just (OAsk o)  -> addToOrderBook (OAsk $ o { ba_shares = ba_shares o - shares, ba_timestamp = ts }) . deleteFromOrderBook (OAsk o) $ ob
 
 fromAddOrder :: N50.AddOrder -> Order
 fromAddOrder (N50.AddOrder sl tn ts rn bs sh st pr)
@@ -161,13 +185,13 @@ pOrder (N50.MAddOrder         x) ob = addToOrderBook (fromAddOrder         x) ob
 pOrder (N50.MAddOrderMPIDAttr x) ob = addToOrderBook (fromAddOrderMPIDAttr x) ob
 pOrder (N50.MOrderExecuted    x) ob =
   let refNum = N50.oe_orderReferenceNumber x
-  in subtractFromOrderBook refNum (N50.oe_executedShares x) ob
+  in subtractFromOrderBook refNum (N50.oe_executedShares x) (N50.oe_timestamp x) ob
 pOrder (N50.MOrderExecutedWithPrice x) ob =
   let refNum = N50.oewp_orderReferenceNumber x
-  in subtractFromOrderBook refNum (N50.oewp_executedShares x) ob
+  in subtractFromOrderBook refNum (N50.oewp_executedShares x) (N50.oewp_timestamp x) ob
 pOrder (N50.MOrderCancel      x) ob =
   let refNum = N50.oc_orderReferenceNumber x
-  in subtractFromOrderBook refNum (N50.oc_cancelledShares x) ob
+  in subtractFromOrderBook refNum (N50.oc_cancelledShares x) (N50.oc_timestamp x) ob
 pOrder (N50.MOrderDelete      x) ob =
   let refNum = N50.od_orderReferenceNumber x
   in case lookupOrderInBook refNum ob of
@@ -181,7 +205,7 @@ pOrder (N50.MOrderReplace     x) ob =
                       ba' = ba { ba_referenceNumber = N50.or_newOrderReferenceNumber x
                                , ba_shares          = N50.or_shares x
                                , ba_price           = N50.or_price x
-                               , ba_timeStamp       = N50.or_timestamp x
+                               , ba_timestamp       = N50.or_timestamp x
                                }
                       o'  = case o of OBid _ -> OBid ba'; OAsk _ -> OAsk ba'
                   in addToOrderBook o' . deleteFromOrderBook o $ ob
@@ -198,12 +222,28 @@ consolidate2 s (m:ms) =
 
 --------------------------------------------------------------------------------
 
+type OrderBooks = Map.Map Word16 OrderBook
+
+-- (OrderBook BS.empty Set.empty Set.empty)
+
+consolidate3 :: OrderBooks -> [N50.Message] -> OrderBooks
+consolidate3 bs [] = bs
+consolidate3 bs (m:ms) =
+  let n   = N50.stockLocate m
+      b   = maybe (OrderBook BS.empty Set.empty Set.empty) id . Map.lookup n $ bs
+      b'  = pOrder m b
+      bs' = deepseq b $ Map.insert n b' bs
+  in seq bs' $ consolidate3 bs' ms
+
+--------------------------------------------------------------------------------
+
 opts :: OA.Parser (IO ())
 opts = OA.subparser
   (     OA.command "show"    (OA.info (showRecords <$> OA.argument OA.str OA.idm) (OA.progDesc "show all records in TARGET"))
   OA.<> OA.command "orders1" (OA.info (showOrders1 <$> OA.argument OA.str OA.idm) (OA.progDesc "show orders1 in TARGET"))
   OA.<> OA.command "orders2" (OA.info (showOrders2 <$> (read <$> OA.argument OA.str OA.idm) <*> OA.argument OA.str OA.idm) (OA.progDesc "show orders2 in TARGET"))
   OA.<> OA.command "orders3" (OA.info (showOrders3 <$> (read <$> OA.argument OA.str OA.idm) <*> OA.argument OA.str OA.idm) (OA.progDesc "show orders3 in TARGET"))
+  OA.<> OA.command "orders4" (OA.info (showOrders4 <$> OA.argument OA.str OA.idm) (OA.progDesc "show all outstanding order book entries at the end of trading in TARGET"))
   OA.<> OA.command "stop"    (OA.info (pure (return ())) OA.idm) )
 
 main :: IO ()

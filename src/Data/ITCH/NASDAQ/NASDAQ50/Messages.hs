@@ -1,6 +1,9 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.ITCH.NASDAQ.NASDAQ50.Messages where
+
+import Control.DeepSeq
 
 import Data.Word
 import qualified Data.Binary           as S
@@ -10,10 +13,14 @@ import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Short as BS
 import qualified Data.ByteString.Lazy  as L
 
+import GHC.Generics
+
 type ShortByteString = BS.ShortByteString
 
 newtype TimeStamp6 = T6 Word64
-                   deriving (Eq, Ord, Show)
+                   deriving (Eq, Ord, Show, Generic)
+
+instance NFData TimeStamp6
 
 instance S.Binary TimeStamp6 where
   get = do
