@@ -108,18 +108,18 @@ processOrder _                         s = s
 --------------------------------------------------------------------------------
 
 data OrderBook = OrderBook
-  { ob_stock :: ShortByteString
-  , ob_bids  :: Set.Set BidAsk
-  , ob_asks  :: Set.Set BidAsk
+  { ob_stock :: {-# UNPACK #-} !ShortByteString
+  , ob_bids  :: {-# UNPACK #-} !(Set.Set BidAsk)
+  , ob_asks  :: {-# UNPACK #-} !(Set.Set BidAsk)
   } deriving (Eq, Ord, Show, Generic)
 
 instance NFData OrderBook
 
 data BidAsk = BidAsk
-  { ba_referenceNumber :: Word64
-  , ba_shares          :: Word32
-  , ba_price           :: Word32
-  , ba_timestamp       :: N50.TimeStamp6
+  { ba_referenceNumber :: {-# UNPACK #-} !Word64
+  , ba_shares          :: {-# UNPACK #-} !Word32
+  , ba_price           :: {-# UNPACK #-} !Word32
+  , ba_timestamp       :: {-# UNPACK #-} !N50.TimeStamp6
   } deriving (Eq, Ord, Show, Generic)
 
 instance NFData BidAsk

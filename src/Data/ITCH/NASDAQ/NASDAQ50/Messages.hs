@@ -35,10 +35,10 @@ class MessageBasics a where
   timestamp      :: a -> TimeStamp6
 
 data SystemEvent = SystemEvent
-  { sem_stockLocate    :: Word16
-  , sem_trackingNumber :: Word16
-  , sem_timestamp      :: TimeStamp6
-  , sem_eventCode      :: Char
+  { sem_stockLocate    :: {-# UNPACK #-} !Word16
+  , sem_trackingNumber :: {-# UNPACK #-} !Word16
+  , sem_timestamp      :: {-# UNPACK #-} !TimeStamp6
+  , sem_eventCode      :: {-# UNPACK #-} !Char
   } deriving (Eq, Ord, Show)
 
 instance S.Binary SystemEvent where
@@ -51,23 +51,23 @@ instance MessageBasics SystemEvent where
   timestamp      = sem_timestamp
   
 data StockDirectory = StockDirectory
-  { sdm_stockLocate                 :: Word16
-  , sdm_trackingNumber              :: Word16
-  , sdm_timestamp                   :: TimeStamp6
-  , sdm_stock                       :: ShortByteString -- 8
-  , sdm_marketCategory              :: Char
-  , sdm_financialStatusIndicator    :: Char
-  , sdm_roundLotSize                :: Word32
-  , sdm_roundLotsOnly               :: Char
-  , sdm_issueClassification         :: Char
-  , sdm_issueSubType                :: ShortByteString -- 2
-  , sdm_authenticity                :: Char
-  , sdm_shortSaleThresholdIndicator :: Char
-  , sdm_IPOFlag                     :: Char
-  , sdm_LULDReferencePriceTier      :: Char
-  , sdm_ETPFlag                     :: Char
-  , sdm_ETPLeverageFactor           :: Word32
-  , sdm_inverseIndicator            :: Char
+  { sdm_stockLocate                 :: {-# UNPACK #-} !Word16
+  , sdm_trackingNumber              :: {-# UNPACK #-} !Word16
+  , sdm_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , sdm_stock                       :: {-# UNPACK #-} !ShortByteString -- 8
+  , sdm_marketCategory              :: {-# UNPACK #-} !Char
+  , sdm_financialStatusIndicator    :: {-# UNPACK #-} !Char
+  , sdm_roundLotSize                :: {-# UNPACK #-} !Word32
+  , sdm_roundLotsOnly               :: {-# UNPACK #-} !Char
+  , sdm_issueClassification         :: {-# UNPACK #-} !Char
+  , sdm_issueSubType                :: {-# UNPACK #-} !ShortByteString -- 2
+  , sdm_authenticity                :: {-# UNPACK #-} !Char
+  , sdm_shortSaleThresholdIndicator :: {-# UNPACK #-} !Char
+  , sdm_IPOFlag                     :: {-# UNPACK #-} !Char
+  , sdm_LULDReferencePriceTier      :: {-# UNPACK #-} !Char
+  , sdm_ETPFlag                     :: {-# UNPACK #-} !Char
+  , sdm_ETPLeverageFactor           :: {-# UNPACK #-} !Word32
+  , sdm_inverseIndicator            :: {-# UNPACK #-} !Char
   } deriving (Eq, Ord, Show)
 
 instance S.Binary StockDirectory where
@@ -83,13 +83,13 @@ instance MessageBasics StockDirectory where
   timestamp      = sdm_timestamp
   
 data StockTradingAction = StockTradingAction
-  { sta_stockLocate                 :: Word16
-  , sta_trackingNumber              :: Word16
-  , sta_timestamp                   :: TimeStamp6
-  , sta_stock                       :: ShortByteString -- 8
-  , sta_tradingState                :: Char
-  , sta_reserved                    :: Char
-  , sta_reason                      :: ShortByteString -- 4
+  { sta_stockLocate                 :: {-# UNPACK #-} !Word16
+  , sta_trackingNumber              :: {-# UNPACK #-} !Word16
+  , sta_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , sta_stock                       :: {-# UNPACK #-} !ShortByteString -- 8
+  , sta_tradingState                :: {-# UNPACK #-} !Char
+  , sta_reserved                    :: {-# UNPACK #-} !Char
+  , sta_reason                      :: {-# UNPACK #-} !ShortByteString -- 4
   } deriving (Eq, Ord, Show)
 
 instance S.Binary StockTradingAction where
@@ -103,11 +103,11 @@ instance MessageBasics StockTradingAction where
   timestamp      = sta_timestamp
   
 data REGSHORestriction = REGSHORestriction
-  { rsr_stockLocate                 :: Word16
-  , rsr_trackingNumber              :: Word16
-  , rsr_timestamp                   :: TimeStamp6
-  , rsr_stock                       :: ShortByteString -- 8
-  , rsr_REGSHOAction                :: Char
+  { rsr_stockLocate                 :: {-# UNPACK #-} !Word16
+  , rsr_trackingNumber              :: {-# UNPACK #-} !Word16
+  , rsr_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , rsr_stock                       :: {-# UNPACK #-} !ShortByteString -- 8
+  , rsr_REGSHOAction                :: {-# UNPACK #-} !Char
   } deriving (Eq, Ord, Show)
   
 instance S.Binary REGSHORestriction where
@@ -121,14 +121,14 @@ instance MessageBasics REGSHORestriction where
   timestamp      = rsr_timestamp
 
 data MarketParticipantPosition = MarketParticipantPosition
-  { mpp_stockLocate                 :: Word16
-  , mpp_trackingNumber              :: Word16
-  , mpp_timestamp                   :: TimeStamp6
-  , mpp_mpid                        :: Word32
-  , mpp_stock                       :: ShortByteString -- 8
-  , mpp_primaryMarketMaker          :: Char
-  , mpp_marketMakerMode             :: Char
-  , mpp_marketPartcipantState       :: Char
+  { mpp_stockLocate                 :: {-# UNPACK #-} !Word16
+  , mpp_trackingNumber              :: {-# UNPACK #-} !Word16
+  , mpp_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , mpp_mpid                        :: {-# UNPACK #-} !Word32
+  , mpp_stock                       :: {-# UNPACK #-} !ShortByteString -- 8
+  , mpp_primaryMarketMaker          :: {-# UNPACK #-} !Char
+  , mpp_marketMakerMode             :: {-# UNPACK #-} !Char
+  , mpp_marketPartcipantState       :: {-# UNPACK #-} !Char
   } deriving (Eq, Ord, Show)
 
 instance S.Binary MarketParticipantPosition where
@@ -144,12 +144,12 @@ instance MessageBasics MarketParticipantPosition where
 --------------------------------------------------------------------------------
 
 data MWCBDeclineLevel = MWCBDeclineLevel
-  { mdl_stockLocate                 :: Word16
-  , mdl_trackingNumber              :: Word16
-  , mdl_timestamp                   :: TimeStamp6
-  , mdl_level1                      :: Word64   -- fixed point 8 decimals
-  , mdl_level2                      :: Word64   -- fixed point 8 decimals
-  , mdl_level3                      :: Word64   -- fixed point 8 decimals
+  { mdl_stockLocate                 :: {-# UNPACK #-} !Word16
+  , mdl_trackingNumber              :: {-# UNPACK #-} !Word16
+  , mdl_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , mdl_level1                      :: {-# UNPACK #-} !Word64   -- fixed point 8 decimals
+  , mdl_level2                      :: {-# UNPACK #-} !Word64   -- fixed point 8 decimals
+  , mdl_level3                      :: {-# UNPACK #-} !Word64   -- fixed point 8 decimals
   } deriving (Eq, Ord, Show)
 
 instance S.Binary MWCBDeclineLevel where
@@ -165,10 +165,10 @@ instance MessageBasics MWCBDeclineLevel where
 --------------------------------------------------------------------------------
 
 data MWCBBreach = MWCBBreach
-  { mbr_stockLocate                 :: Word16
-  , mbr_trackingNumber              :: Word16
-  , mbr_timestamp                   :: TimeStamp6
-  , mbr_breachedLevel               :: Char
+  { mbr_stockLocate                 :: {-# UNPACK #-} !Word16
+  , mbr_trackingNumber              :: {-# UNPACK #-} !Word16
+  , mbr_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , mbr_breachedLevel               :: {-# UNPACK #-} !Char
   } deriving (Eq, Ord, Show)
 
 instance S.Binary MWCBBreach where
@@ -183,13 +183,13 @@ instance MessageBasics MWCBBreach where
 --------------------------------------------------------------------------------
 
 data IPOQuotingPeriodUpdate = IPOQuotingPeriodUpdate
-  { qpu_stockLocate                 :: Word16
-  , qpu_trackingNumber              :: Word16
-  , qpu_timestamp                   :: TimeStamp6
-  , qpu_stock                       :: ShortByteString -- 8
-  , qpu_quotationReleaseTime        :: Word32
-  , qpu_quotationReleaseQualifier   :: Char
-  , qpu_price                       :: Word32 -- 4 decimal places
+  { qpu_stockLocate                 :: {-# UNPACK #-} !Word16
+  , qpu_trackingNumber              :: {-# UNPACK #-} !Word16
+  , qpu_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , qpu_stock                       :: {-# UNPACK #-} !ShortByteString -- 8
+  , qpu_quotationReleaseTime        :: {-# UNPACK #-} !Word32
+  , qpu_quotationReleaseQualifier   :: {-# UNPACK #-} !Char
+  , qpu_price                       :: {-# UNPACK #-} !Word32 -- 4 decimal places
   } deriving (Eq, Ord, Show)
 
 instance S.Binary IPOQuotingPeriodUpdate where
@@ -205,14 +205,14 @@ instance MessageBasics IPOQuotingPeriodUpdate where
 --------------------------------------------------------------------------------
 
 data AddOrder = AddOrder
-  { ao_stockLocate                 :: Word16
-  , ao_trackingNumber              :: Word16
-  , ao_timestamp                   :: TimeStamp6
-  , ao_orderReferenceNumber        :: Word64
-  , ao_buySellIndicator            :: Char
-  , ao_shares                      :: Word32
-  , ao_stock                       :: ShortByteString -- 8
-  , ao_price                       :: Word32 -- 4 decimal places
+  { ao_stockLocate                 :: {-# UNPACK #-} !Word16
+  , ao_trackingNumber              :: {-# UNPACK #-} !Word16
+  , ao_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , ao_orderReferenceNumber        :: {-# UNPACK #-} !Word64
+  , ao_buySellIndicator            :: {-# UNPACK #-} !Char
+  , ao_shares                      :: {-# UNPACK #-} !Word32
+  , ao_stock                       :: {-# UNPACK #-} !ShortByteString -- 8
+  , ao_price                       :: {-# UNPACK #-} !Word32 -- 4 decimal places
   } deriving (Eq, Ord, Show)
 
 instance S.Binary AddOrder where
@@ -228,15 +228,15 @@ instance MessageBasics AddOrder where
 --------------------------------------------------------------------------------
 
 data AddOrderMPIDAttr = AddOrderMPIDAttr
-  { aoa_stockLocate                 :: Word16
-  , aoa_trackingNumber              :: Word16
-  , aoa_timestamp                   :: TimeStamp6
-  , aoa_orderReferenceNumber        :: Word64
-  , aoa_buySellIndicator            :: Char
-  , aoa_shares                      :: Word32
-  , aoa_stock                       :: ShortByteString -- 8
-  , aoa_price                       :: Word32 -- 4 decimal places
-  , aoa_attribution                 :: ShortByteString -- 4
+  { aoa_stockLocate                 :: {-# UNPACK #-} !Word16
+  , aoa_trackingNumber              :: {-# UNPACK #-} !Word16
+  , aoa_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , aoa_orderReferenceNumber        :: {-# UNPACK #-} !Word64
+  , aoa_buySellIndicator            :: {-# UNPACK #-} !Char
+  , aoa_shares                      :: {-# UNPACK #-} !Word32
+  , aoa_stock                       :: {-# UNPACK #-} !ShortByteString -- 8
+  , aoa_price                       :: {-# UNPACK #-} !Word32 -- 4 decimal places
+  , aoa_attribution                 :: {-# UNPACK #-} !ShortByteString -- 4
   } deriving (Eq, Ord, Show)
 
 instance S.Binary AddOrderMPIDAttr where
@@ -253,12 +253,12 @@ instance MessageBasics AddOrderMPIDAttr where
 --------------------------------------------------------------------------------
 
 data OrderExecuted = OrderExecuted
-  { oe_stockLocate                 :: Word16
-  , oe_trackingNumber              :: Word16
-  , oe_timestamp                   :: TimeStamp6
-  , oe_orderReferenceNumber        :: Word64
-  , oe_executedShares              :: Word32
-  , oe_matchNumber                 :: Word64
+  { oe_stockLocate                 :: {-# UNPACK #-} !Word16
+  , oe_trackingNumber              :: {-# UNPACK #-} !Word16
+  , oe_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , oe_orderReferenceNumber        :: {-# UNPACK #-} !Word64
+  , oe_executedShares              :: {-# UNPACK #-} !Word32
+  , oe_matchNumber                 :: {-# UNPACK #-} !Word64
   } deriving (Eq, Ord, Show)
 
 instance S.Binary OrderExecuted where
@@ -274,14 +274,14 @@ instance MessageBasics OrderExecuted where
 --------------------------------------------------------------------------------
 
 data OrderExecutedWithPrice = OrderExecutedWithPrice
-  { oewp_stockLocate                 :: Word16
-  , oewp_trackingNumber              :: Word16
-  , oewp_timestamp                   :: TimeStamp6
-  , oewp_orderReferenceNumber        :: Word64
-  , oewp_executedShares              :: Word32
-  , oewp_matchNumber                 :: Word64
-  , oewp_printable                   :: Char
-  , oewp_executionPrice              :: Word32
+  { oewp_stockLocate                 :: {-# UNPACK #-} !Word16
+  , oewp_trackingNumber              :: {-# UNPACK #-} !Word16
+  , oewp_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , oewp_orderReferenceNumber        :: {-# UNPACK #-} !Word64
+  , oewp_executedShares              :: {-# UNPACK #-} !Word32
+  , oewp_matchNumber                 :: {-# UNPACK #-} !Word64
+  , oewp_printable                   :: {-# UNPACK #-} !Char
+  , oewp_executionPrice              :: {-# UNPACK #-} !Word32
   } deriving (Eq, Ord, Show)
 
 instance S.Binary OrderExecutedWithPrice where
@@ -297,11 +297,11 @@ instance MessageBasics OrderExecutedWithPrice where
 --------------------------------------------------------------------------------
 
 data OrderCancel = OrderCancel
-  { oc_stockLocate                 :: Word16
-  , oc_trackingNumber              :: Word16
-  , oc_timestamp                   :: TimeStamp6
-  , oc_orderReferenceNumber        :: Word64
-  , oc_cancelledShares             :: Word32
+  { oc_stockLocate                 :: {-# UNPACK #-} !Word16
+  , oc_trackingNumber              :: {-# UNPACK #-} !Word16
+  , oc_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , oc_orderReferenceNumber        :: {-# UNPACK #-} !Word64
+  , oc_cancelledShares             :: {-# UNPACK #-} !Word32
   } deriving (Eq, Ord, Show)
 
 instance S.Binary OrderCancel where
@@ -316,10 +316,10 @@ instance MessageBasics OrderCancel where
 --------------------------------------------------------------------------------
 
 data OrderDelete = OrderDelete
-  { od_stockLocate                 :: Word16
-  , od_trackingNumber              :: Word16
-  , od_timestamp                   :: TimeStamp6
-  , od_orderReferenceNumber        :: Word64
+  { od_stockLocate                 :: {-# UNPACK #-} !Word16
+  , od_trackingNumber              :: {-# UNPACK #-} !Word16
+  , od_timestamp                   :: {-# UNPACK #-} !TimeStamp6
+  , od_orderReferenceNumber        :: {-# UNPACK #-} !Word64
   } deriving (Eq, Ord, Show)
 
 instance S.Binary OrderDelete where
@@ -334,13 +334,13 @@ instance MessageBasics OrderDelete where
 --------------------------------------------------------------------------------
 
 data OrderReplace = OrderReplace
-  { or_stockLocate                  :: Word16
-  , or_trackingNumber               :: Word16
-  , or_timestamp                    :: TimeStamp6
-  , or_originalOrderReferenceNumber :: Word64
-  , or_newOrderReferenceNumber      :: Word64
-  , or_shares                       :: Word32
-  , or_price                        :: Word32 -- 4 decimal places
+  { or_stockLocate                  :: {-# UNPACK #-} !Word16
+  , or_trackingNumber               :: {-# UNPACK #-} !Word16
+  , or_timestamp                    :: {-# UNPACK #-} !TimeStamp6
+  , or_originalOrderReferenceNumber :: {-# UNPACK #-} !Word64
+  , or_newOrderReferenceNumber      :: {-# UNPACK #-} !Word64
+  , or_shares                       :: {-# UNPACK #-} !Word32
+  , or_price                        :: {-# UNPACK #-} !Word32 -- 4 decimal places
   } deriving (Eq, Ord, Show)
 
 instance S.Binary OrderReplace where
@@ -356,15 +356,15 @@ instance MessageBasics OrderReplace where
 --------------------------------------------------------------------------------
 
 data Trade = Trade
-  { t_stockLocate                  :: Word16
-  , t_trackingNumber               :: Word16
-  , t_timestamp                    :: TimeStamp6
-  , t_orderReferenceNumber         :: Word64
-  , t_buySellIndicator             :: Char
-  , t_shares                       :: Word32
-  , t_stock                        :: ShortByteString -- 8
-  , t_price                        :: Word32 -- 4 decimal places
-  , t_matchNumer                   :: Word64
+  { t_stockLocate                  :: {-# UNPACK #-} !Word16
+  , t_trackingNumber               :: {-# UNPACK #-} !Word16
+  , t_timestamp                    :: {-# UNPACK #-} !TimeStamp6
+  , t_orderReferenceNumber         :: {-# UNPACK #-} !Word64
+  , t_buySellIndicator             :: {-# UNPACK #-} !Char
+  , t_shares                       :: {-# UNPACK #-} !Word32
+  , t_stock                        :: {-# UNPACK #-} !ShortByteString -- 8
+  , t_price                        :: {-# UNPACK #-} !Word32 -- 4 decimal places
+  , t_matchNumer                   :: {-# UNPACK #-} !Word64
   } deriving (Eq, Ord, Show)
 
 instance S.Binary Trade where
@@ -381,14 +381,14 @@ instance MessageBasics Trade where
 --------------------------------------------------------------------------------
 
 data CrossTrade = CrossTrade
-  { ct_stockLocate                  :: Word16
-  , ct_trackingNumber               :: Word16
-  , ct_timestamp                    :: TimeStamp6
-  , ct_shares                       :: Word64
-  , ct_stock                        :: ShortByteString -- 8
-  , ct_price                        :: Word32 -- 4 decimal places
-  , ct_matchNumber                  :: Word64
-  , ct_crossType                    :: Char
+  { ct_stockLocate                  :: {-# UNPACK #-} !Word16
+  , ct_trackingNumber               :: {-# UNPACK #-} !Word16
+  , ct_timestamp                    :: {-# UNPACK #-} !TimeStamp6
+  , ct_shares                       :: {-# UNPACK #-} !Word64
+  , ct_stock                        :: {-# UNPACK #-} !ShortByteString -- 8
+  , ct_price                        :: {-# UNPACK #-} !Word32 -- 4 decimal places
+  , ct_matchNumber                  :: {-# UNPACK #-} !Word64
+  , ct_crossType                    :: {-# UNPACK #-} !Char
   } deriving (Eq, Ord, Show)
 
 instance S.Binary CrossTrade where
@@ -405,10 +405,10 @@ instance MessageBasics CrossTrade where
 --------------------------------------------------------------------------------
 
 data BrokenTrade = BrokenTrade
-  { bt_stockLocate                  :: Word16
-  , bt_trackingNumber               :: Word16
-  , bt_timestamp                    :: TimeStamp6
-  , bt_matchNumber                  :: Word64
+  { bt_stockLocate                  :: {-# UNPACK #-} !Word16
+  , bt_trackingNumber               :: {-# UNPACK #-} !Word16
+  , bt_timestamp                    :: {-# UNPACK #-} !TimeStamp6
+  , bt_matchNumber                  :: {-# UNPACK #-} !Word64
   } deriving (Eq, Ord, Show)
 
 instance S.Binary BrokenTrade where
@@ -423,18 +423,18 @@ instance MessageBasics BrokenTrade where
 --------------------------------------------------------------------------------
 
 data NOII = NOII
-  { noii_stockLocate                  :: Word16
-  , noii_trackingNumber               :: Word16
-  , noii_timestamp                    :: TimeStamp6
-  , noii_paidShares                   :: Word64
-  , noii_imbalanceShares              :: Word64
-  , noii_imbalanceDirection           :: Char
-  , noii_stock                        :: ShortByteString
-  , noii_farPrice                     :: Word32
-  , noii_nearPrice                    :: Word32
-  , noii_currentReferencePrice        :: Word32
-  , noii_crossType                    :: Char
-  , noii_priceVariationIndicator      :: Char
+  { noii_stockLocate                  :: {-# UNPACK #-} !Word16
+  , noii_trackingNumber               :: {-# UNPACK #-} !Word16
+  , noii_timestamp                    :: {-# UNPACK #-} !TimeStamp6
+  , noii_paidShares                   :: {-# UNPACK #-} !Word64
+  , noii_imbalanceShares              :: {-# UNPACK #-} !Word64
+  , noii_imbalanceDirection           :: {-# UNPACK #-} !Char
+  , noii_stock                        :: {-# UNPACK #-} !ShortByteString
+  , noii_farPrice                     :: {-# UNPACK #-} !Word32
+  , noii_nearPrice                    :: {-# UNPACK #-} !Word32
+  , noii_currentReferencePrice        :: {-# UNPACK #-} !Word32
+  , noii_crossType                    :: {-# UNPACK #-} !Char
+  , noii_priceVariationIndicator      :: {-# UNPACK #-} !Char
   } deriving (Eq, Ord, Show)
 
 instance S.Binary NOII where
@@ -453,11 +453,11 @@ instance MessageBasics NOII where
 --------------------------------------------------------------------------------
 
 data RPII = RPII
-  { rpii_stockLocate                  :: Word16
-  , rpii_trackingNumber               :: Word16
-  , rpii_timestamp                    :: TimeStamp6
-  , rpii_stock                        :: ShortByteString
-  , rpii_interestFlag                 :: Char
+  { rpii_stockLocate                  :: {-# UNPACK #-} !Word16
+  , rpii_trackingNumber               :: {-# UNPACK #-} !Word16
+  , rpii_timestamp                    :: {-# UNPACK #-} !TimeStamp6
+  , rpii_stock                        :: {-# UNPACK #-} !ShortByteString
+  , rpii_interestFlag                 :: {-# UNPACK #-} !Char
   } deriving (Eq, Ord, Show)
 
 instance S.Binary RPII where
